@@ -18,6 +18,6 @@ google sheets is objectively the worst place to build a video game. network call
 * continuous auto-run loop (~100ms ticks)
 
 ## how to run
-1. open the sheet and hit RESET 🔄 to wipe the canvas and sync properties
-2. hit START AUTO 🚀 to trigger the main loop
+1. open the sheet and hit RESET to wipe the canvas and sync properties
+2. hit START AUTO to trigger the main loop
 3. steer using the directional buttons or pick a map with the selector buttons
