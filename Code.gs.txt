@@ -1,0 +1,239 @@
+/**
+ * SLITHER-XLSX GAME ENGINE (FIXED RENDER OFFSET & GAMEBOY LAYOUT)
+ * Screen Grid: 20x20 offset to C3:V22 inside GameBoy bezel
+ * Dashboard: Columns X & Y
+ */
+
+const GRID_SIZE = 20;
+const ROW_OFFSET = 3; // Starts strictly at Row 3 (C3)
+const COL_OFFSET = 3; // Starts strictly at Col 3 (C3)
+
+const MAPS = {
+  CLASSIC: [],
+  BOX: [
+    ...Array.from({length: 14}, (_, i) => [3, i + 3]),
+    ...Array.from({length: 14}, (_, i) => [16, i + 3]),
+    ...Array.from({length: 12}, (_, i) => [i + 4, 3]),
+    ...Array.from({length: 12}, (_, i) => [i + 4, 16])
+  ],
+  MAZE: [
+    [2, 5], [2, 6], [2, 7], [2, 8], [2, 11], [2, 12], [2, 13], [2, 14],
+    [5, 2], [6, 2], [7, 2], [12, 2], [13, 2], [14, 2],
+    [5, 17], [6, 17], [7, 17], [12, 17], [13, 17], [14, 17],
+    [17, 5], [17, 6], [17, 7], [17, 8], [17, 11], [17, 12], [17, 13], [17, 14],
+    [6, 6], [6, 7], [6, 8], [6, 11], [6, 12], [6, 13],
+    [13, 6], [13, 7], [13, 8], [13, 11], [13, 12], [13, 13],
+    [9, 9], [9, 10], [10, 9], [10, 10]
+  ]
+};
+
+function setupBoard() {
+  const props = PropertiesService.getScriptProperties();
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+
+  // Reset session properties
+  props.setProperty("SNAKE", JSON.stringify([[10, 10], [10, 9], [10, 8]]));
+  props.setProperty("DIR", "RIGHT");
+  props.setProperty("APPLE", JSON.stringify([5, 15]));
+  props.setProperty("APPLE_TYPE", "RED");
+  props.setProperty("GOLD_TIMER", "0");
+  props.setProperty("SCORE", "0");
+  
+  if (!props.getProperty("MAP")) props.setProperty("MAP", "CLASSIC");
+  if (!props.getProperty("HIGH_SCORE")) props.setProperty("HIGH_SCORE", "0");
+
+  // --- BUILD GAMEBOY CHASSIS & SCREEN ---
+  
+  // 1. Plastic Console Shell (Light Grey)
+  sheet.getRange("A1:W30").setBackground("#E0E0E0");
+
+  // 2. Dark Bezel Frame
+  sheet.getRange("B2:U21").setBackground("#2B2C38");
+
+  // 3. LCD Display Canvas (Centered Green Grid)
+  sheet.getRange("C3:V22").setBackground("#8B956D");
+
+  // 4. Reset & Format Side Dashboard (Columns X & Y)
+  sheet.getRange("X1:Y10").breakApart();
+  sheet.getRange("X1:Y10").clearContent();
+  sheet.getRange("X1:Y10").setBackground("#F3F4F6");
+
+  // Header Banner
+  let headerRange = sheet.getRange("X1:Y1");
+  headerRange.merge();
+  headerRange.setValue("GAMEBOY COLOR");
+  headerRange.setBackground("#111827");
+  headerRange.setFontColor("#FFFFFF");
+  headerRange.setFontWeight("bold");
+  headerRange.setHorizontalAlignment("center");
+
+  updateDashboard(0, parseInt(props.getProperty("HIGH_SCORE")));
+  render();
+}
+
+function gameTick() {
+  const props = PropertiesService.getScriptProperties();
+  let snake = JSON.parse(props.getProperty("SNAKE") || "[[10,10],[10,9],[10,8]]");
+  let dir = props.getProperty("DIR") || "RIGHT";
+  let apple = JSON.parse(props.getProperty("APPLE") || "[5,15]");
+  let appleType = props.getProperty("APPLE_TYPE") || "RED";
+  let goldTimer = parseInt(props.getProperty("GOLD_TIMER") || "0");
+  let score = parseInt(props.getProperty("SCORE") || "0");
+  let highScore = parseInt(props.getProperty("HIGH_SCORE") || "0");
+  let currentMapName = props.getProperty("MAP") || "CLASSIC";
+  let obstacles = MAPS[currentMapName] || [];
+
+  let head = [...snake[0]];
+
+  if (dir === "RIGHT") head[1] += 1;
+  if (dir === "LEFT")  head[1] -= 1;
+  if (dir === "UP")    head[0] -= 1;
+  if (dir === "DOWN")  head[0] += 1;
+
+  if (head[0] < 0 || head[0] >= GRID_SIZE || head[1] < 0 || head[1] >= GRID_SIZE) {
+    handleGameOver(score, highScore);
+    return;
+  }
+
+  for (let i = 0; i < obstacles.length; i++) {
+    if (head[0] === obstacles[i][0] && head[1] === obstacles[i][1]) {
+      handleGameOver(score, highScore);
+      return;
+    }
+  }
+
+  for (let i = 0; i < snake.length; i++) {
+    if (head[0] === snake[i][0] && head[1] === snake[i][1]) {
+      handleGameOver(score, highScore);
+      return;
+    }
+  }
+
+  snake.unshift(head);
+
+  if (appleType === "GOLD") {
+    goldTimer -= 1;
+    if (goldTimer <= 0) {
+      appleType = "RED";
+      props.setProperty("APPLE_TYPE", "RED");
+    } else {
+      props.setProperty("GOLD_TIMER", goldTimer.toString());
+    }
+  }
+
+  if (head[0] === apple[0] && head[1] === apple[1]) {
+    let points = (appleType === "GOLD") ? 30 : 10;
+    score += points;
+    props.setProperty("SCORE", score.toString());
+
+    if (score > highScore) {
+      highScore = score;
+      props.setProperty("HIGH_SCORE", highScore.toString());
+    }
+
+    updateDashboard(score, highScore);
+
+    let isGold = Math.random() < 0.25;
+    appleType = isGold ? "GOLD" : "RED";
+    props.setProperty("APPLE_TYPE", appleType);
+
+    if (isGold) props.setProperty("GOLD_TIMER", "15");
+
+    let newRow, newCol, invalid;
+    do {
+      invalid = false;
+      newRow = Math.floor(Math.random() * GRID_SIZE);
+      newCol = Math.floor(Math.random() * GRID_SIZE);
+
+      for (let ob of obstacles) {
+        if (ob[0] === newRow && ob[1] === newCol) invalid = true;
+      }
+      for (let segment of snake) {
+        if (segment[0] === newRow && segment[1] === newCol) invalid = true;
+      }
+    } while (invalid);
+
+    apple = [newRow, newCol];
+    props.setProperty("APPLE", JSON.stringify(apple));
+  } else {
+    snake.pop();
+  }
+
+  props.setProperty("SNAKE", JSON.stringify(snake));
+  renderState(snake, apple, appleType, obstacles);
+}
+
+function handleGameOver(currentScore, highScore) {
+  setupBoard();
+}
+
+function setMapClassic() { setMap("CLASSIC"); }
+function setMapBox()     { setMap("BOX"); }
+function setMapMaze()    { setMap("MAZE"); }
+
+function setMap(mapName) {
+  const props = PropertiesService.getScriptProperties();
+  props.setProperty("MAP", mapName);
+  setupBoard();
+}
+
+function updateDashboard(score, highScore) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  const props = PropertiesService.getScriptProperties();
+  
+  sheet.getRange("X2").setValue("SCORE:");
+  sheet.getRange("X2").setFontWeight("bold");
+
+  sheet.getRange("X3").setValue("BEST:");
+  sheet.getRange("X3").setFontWeight("bold");
+
+  sheet.getRange("X4").setValue("MAP:");
+  sheet.getRange("X4").setFontWeight("bold");
+
+  sheet.getRange("Y2").setValue(score);
+  sheet.getRange("Y3").setValue(highScore);
+  sheet.getRange("Y4").setValue(props.getProperty("MAP") || "CLASSIC");
+}
+
+function goUp()    { setDirection("UP"); }
+function goDown()  { setDirection("DOWN"); }
+function goLeft()  { setDirection("LEFT"); }
+function goRight() { setDirection("RIGHT"); }
+
+function setDirection(newDir) {
+  const props = PropertiesService.getScriptProperties();
+  props.setProperty("DIR", newDir);
+  gameTick(); 
+}
+
+function renderState(snake, apple, appleType, obstacles) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  let grid = Array(GRID_SIZE).fill(0).map(() => Array(GRID_SIZE).fill(0));
+
+  for (let ob of obstacles) grid[ob[0]][ob[1]] = 4;
+  grid[apple[0]][apple[1]] = (appleType === "GOLD") ? 5 : 3;
+
+  for (let i = 1; i < snake.length; i++) grid[snake[i][0]][snake[i][1]] = 1;
+  grid[snake[0][0]][snake[0][1]] = 2;
+
+  // Locks strictly to centered display screen C3:V22
+  sheet.getRange(ROW_OFFSET, COL_OFFSET, GRID_SIZE, GRID_SIZE).setValues(grid);
+  SpreadsheetApp.flush();
+}
+
+function render() {
+  const props = PropertiesService.getScriptProperties();
+  let snake = JSON.parse(props.getProperty("SNAKE"));
+  let apple = JSON.parse(props.getProperty("APPLE"));
+  let appleType = props.getProperty("APPLE_TYPE") || "RED";
+  let mapName = props.getProperty("MAP") || "CLASSIC";
+  let obstacles = MAPS[mapName] || [];
+  renderState(snake, apple, appleType, obstacles);
+}
+
+function startAutoGame() {
+  for (let i = 0; i < 500; i++) {
+    gameTick();
+    Utilities.sleep(100);
+  }
+}
