@@ -39,4 +39,4 @@ all the apps script engine code is uploaded right here in the repository under `
 2. use the on-sheet directional buttons (`UP`, `DOWN`, `LEFT`, `RIGHT`) to steer your snake
 3. pick ur map (`CLASSIC`, `BOX`, `MAZE`) and click the **THEME** button to cycle through all 10 colorways on the fly
 
-**practice mode note (not recommended) 💀**: hitting **START AUTO** runs an automated simulation loop for testing but actually playing it manually with the button controls inside a spreadsheet is pure psychological torture. but hey thats the whole point of the wrong tool challenge
+**practice mode note (not recommended..)**: hitting **START AUTO** runs an automated simulation loop for testing but actually playing it manually with the button controls inside a spreadsheet is pure psychological torture. but hey thats the whole point of the wrong tool challenge ggs
