@@ -6,13 +6,13 @@ a retro arcade snake engine built completely inside google sheets using apps scr
 
 ## why this exists
 
-google sheets is objectively the absolute worst place on planet earth to build a video game network calls lag screen tearing is real and ui latency is completely cooked we built slither.xlsx anyway just to see how far we could torture a spreadsheet grid until it ran a fully functional snake game plus i am doing all of this because i really want that anbernic rg35xx pro handheld hehe i never had one of the handhelds before in my life so yeeee fingers crossed
+google sheets is objectively the absolute worst place on planet earth to build a video game network calls lag screen tearing is real and ui latency is completely cooked i built slither.xlsx anyway just to see how far i could torture a spreadsheet grid until it ran a fully functional snake game plus i am doing all of this because i really want that anbernic rg35xx pro handheld hehe i never had one of the handhelds before in my life so yeeee fingers crossed
 
-## how we fixed the lag so it doesnt melt your cpu
+## how i fixed the lag so it doesnt melt your cpu
 
-- batch matrix rendering: instead of writing cells one by one like a caveman we build a full 20x20 matrix in memory and dump it all at once using `setValues()`
+- batch matrix rendering: instead of writing cells one by one like a caveman i built a full 20x20 matrix in memory and dumped it all at once using `setValues()`
 - forced render flushes: `SpreadsheetApp.flush()` forces synchronous frame execution so the grid actually updates instead of freezing halfway through
-- properties service storage: all game state like snake coordinates scores and wall maps live in `PropertiesService` so we dont slow down the game loop reading spreadsheet cells every frame
+- properties service storage: all game state like snake coordinates scores and wall maps live in `PropertiesService` so i dont slow down the game loop reading spreadsheet cells every frame
 
 ## features loaded into this monster
 
@@ -27,7 +27,7 @@ google sheets is objectively the absolute worst place on planet earth to build a
   - **shrink tonic**: cuts ur tail length down by 30 percent when things get too tight
   - **diamond gem**: triggers a 3x point multiplier
 - arcade death fx: snake blinks white twice and flashes an animation before wiping the board clean
-- audio bridge: we tried hooking up web audio api oscillators through an html sidebar to get 8-bit sound triggers going but browser audio permissions proved to be absolute menaces and honestly it doesnt work no matter what we tried i am tired and i gave up on the sound engine lol
+- audio bridge: i tried hooking up web audio api oscillators through an html sidebar to get 8-bit sound triggers going but browser audio permissions proved to be absolute menaces and honestly it doesnt work no matter what i tried i am tired and i gave up on the sound engine lol
 
 ## gameplay & how to play guide
 
@@ -35,4 +35,4 @@ google sheets is objectively the absolute worst place on planet earth to build a
 2. use the on-sheet directional buttons (`UP`, `DOWN`, `LEFT`, `RIGHT`) to steer your snake
 3. pick ur map (`CLASSIC`, `BOX`, `MAZE`) and click the **THEME** button to cycle through all 10 colorways on the fly
 
-**practice mode note (not recommended) 💀**: hitting **START AUTO** runs an automated simulation loop for testing but actually playing it manually with the button controls inside a spreadsheet is pure psychological torture. but hey thats the whole point of the wrong tool challenge
+**practice mode note (not recommended...)**: hitting **START AUTO** runs an automated simulation loop for testing but actually playing it manually with the button controls inside a spreadsheet is pure psychological torture. but hey thats the whole point of the wrong tool challenge ggs
