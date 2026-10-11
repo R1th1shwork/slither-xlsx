@@ -29,10 +29,14 @@ google sheets is objectively the absolute worst place on planet earth to build a
 - arcade death fx: snake blinks white twice and flashes an animation before wiping the board clean
 - audio bridge: i tried hooking up web audio api oscillators through an html sidebar to get 8-bit sound triggers going but browser audio permissions proved to be absolute menaces and honestly it doesnt work no matter what i tried i am tired and i gave up on the sound engine lol
 
+## get the source code (`Code.gs`)
+
+all the apps script engine code is uploaded right here in the repository under `Code.gs` if you want to check it out, inspect how the grid matrix rendering works, or paste it directly into your own spreadsheet.
+
 ## gameplay & how to play guide
 
 1. open up the sheet and hit **RESET** to wipe the canvas and sync properties
 2. use the on-sheet directional buttons (`UP`, `DOWN`, `LEFT`, `RIGHT`) to steer your snake
 3. pick ur map (`CLASSIC`, `BOX`, `MAZE`) and click the **THEME** button to cycle through all 10 colorways on the fly
 
-**practice mode note (not recommended...)**: hitting **START AUTO** runs an automated simulation loop for testing but actually playing it manually with the button controls inside a spreadsheet is pure psychological torture. but hey thats the whole point of the wrong tool challenge ggs
+**practice mode note (not recommended) 💀**: hitting **START AUTO** runs an automated simulation loop for testing but actually playing it manually with the button controls inside a spreadsheet is pure psychological torture. but hey thats the whole point of the wrong tool challenge
