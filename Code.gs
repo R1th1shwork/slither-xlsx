@@ -1,8 +1,3 @@
-/**
- * SLITHER-XLSX COMPLETE ENGINE WITH INFO BANNER & REPO LINK
- * 10 Themes + 6 Universal Power-Ups + White Blink Death FX + Sidebar Guide
- */
-
 const GRID_WIDTH = 20;  // Columns A to T
 const GRID_HEIGHT = 20; // Rows 1 to 20
 
@@ -22,8 +17,33 @@ const MAPS = {
     [6, 6], [6, 7], [6, 8], [6, 11], [6, 12], [6, 13],
     [13, 6], [13, 7], [13, 8], [13, 11], [13, 12], [13, 13],
     [9, 9], [9, 10], [10, 9], [10, 10]
+  ],
+  CROSS: [
+    ...Array.from({length: 12}, (_, i) => [i + 4, 9]),
+    ...Array.from({length: 12}, (_, i) => [i + 4, 10]),
+    ...Array.from({length: 12}, (_, i) => [9, i + 4]),
+    ...Array.from({length: 12}, (_, i) => [10, i + 4])
+  ],
+  TUNNEL: [
+    ...Array.from({length: 16}, (_, i) => [5, i + 2]),
+    ...Array.from({length: 16}, (_, i) => [14, i + 2])
+  ],
+  PILLARS: [
+    [4, 4], [4, 5], [5, 4], [5, 5],
+    [4, 14], [4, 15], [5, 14], [5, 15],
+    [14, 4], [14, 5], [15, 4], [15, 5],
+    [14, 14], [14, 15], [15, 14], [15, 15]
+  ],
+  SPIRAL: [
+    ...Array.from({length: 14}, (_, i) => [2, i + 2]),
+    ...Array.from({length: 14}, (_, i) => [i + 2, 17]),
+    ...Array.from({length: 12}, (_, i) => [17, i + 4]),
+    ...Array.from({length: 10}, (_, i) => [i + 5, 4]),
+    ...Array.from({length: 8}, (_, i) => [6, i + 6])
   ]
 };
+
+const MAP_ORDER = ["CLASSIC", "BOX", "MAZE", "CROSS", "TUNNEL", "PILLARS", "SPIRAL"];
 
 const POWERUP_COLORS = {
   BLUE_PILL: "#007AFF",   // Val 6
@@ -56,9 +76,55 @@ function setupBoard() {
   sheet.getRange("A21:Z30").clearContent();
   sheet.getRange("U1:Z25").clearContent();
 
-  props.setProperty("SNAKE", JSON.stringify([[10, 10], [10, 9], [10, 8]]));
+  if (!props.getProperty("MAP")) props.setProperty("MAP", "CLASSIC");
+  let currentMapName = props.getProperty("MAP");
+  let obstacles = MAPS[currentMapName] || [];
+
+  // Strict Inside-Box Safe Spawn Scans
+  let startR = 10, startC = 8;
+  let safeFound = false;
+  let minR = (currentMapName === "BOX") ? 5 : 2;
+  let maxR = (currentMapName === "BOX") ? 14 : GRID_HEIGHT - 2;
+  let minC = (currentMapName === "BOX") ? 6 : 4;
+  let maxC = (currentMapName === "BOX") ? 14 : GRID_WIDTH - 2;
+
+  for (let r = minR; r <= maxR; r++) {
+    for (let c = minC; c <= maxC; c++) {
+      let clash = obstacles.some(ob => 
+        (ob[0] === r && ob[1] === c) || 
+        (ob[0] === r && ob[1] === c-1) || 
+        (ob[0] === r && ob[1] === c-2)
+      );
+      if (!clash) {
+        startR = r;
+        startC = c;
+        safeFound = true;
+        break;
+      }
+    }
+    if (safeFound) break;
+  }
+
+  let initialSnake = [[startR, startC], [startR, startC - 1], [startR, startC - 2]];
+  props.setProperty("SNAKE", JSON.stringify(initialSnake));
   props.setProperty("DIR", "RIGHT");
-  props.setProperty("APPLE", JSON.stringify([5, 15]));
+  
+  // Safe Apple Spawn Constrained to Box Interior if Box Map
+  let aRow, aCol, aInvalid;
+  do {
+    aInvalid = false;
+    if (currentMapName === "BOX") {
+      aRow = Math.floor(Math.random() * 10) + 5; // rows 5 to 14 inside box
+      aCol = Math.floor(Math.random() * 10) + 5; // cols 5 to 14 inside box
+    } else {
+      aRow = Math.floor(Math.random() * GRID_HEIGHT);
+      aCol = Math.floor(Math.random() * GRID_WIDTH);
+    }
+    for (let ob of obstacles) if (ob[0] === aRow && ob[1] === aCol) aInvalid = true;
+    for (let s of initialSnake) if (s[0] === aRow && s[1] === aCol) aInvalid = true;
+  } while (aInvalid);
+
+  props.setProperty("APPLE", JSON.stringify([aRow, aCol]));
   props.setProperty("APPLE_TYPE", "RED");
   props.setProperty("POWERUP", ""); 
   props.setProperty("POWERUP_POS", "[]");
@@ -69,11 +135,10 @@ function setupBoard() {
   props.setProperty("SCORE", "0");
   props.setProperty("PENDING_SOUND", "");
 
-  if (!props.getProperty("MAP")) props.setProperty("MAP", "CLASSIC");
   if (!props.getProperty("HIGH_SCORE")) props.setProperty("HIGH_SCORE", "0");
   if (!props.getProperty("THEME")) props.setProperty("THEME", "GAMEBOY");
 
-  // Arcade Title Header
+  // Arcade Header
   let headerRange = sheet.getRange("V1:W1");
   headerRange.merge();
   headerRange.setValue("SLITHER.XLSX");
@@ -82,18 +147,17 @@ function setupBoard() {
   headerRange.setFontWeight("bold");
   headerRange.setHorizontalAlignment("center");
 
-  // Dashboard Metrics
+  // Dashboard Labels
   sheet.getRange("V2").setValue("SCORE:");
   sheet.getRange("V3").setValue("BEST:");
   sheet.getRange("V4").setValue("MAP:");
   sheet.getRange("V5").setValue("THEME:");
   sheet.getRange("V2:V5").setFontWeight("bold").setFontColor("#000000");
 
-  // GitHub Repo & Guide Banner Links
+  // Repo Link & Guide
   sheet.getRange("V7").setValue("REPO & README:").setFontWeight("bold");
   sheet.getRange("V8").setValue('HYPERLINK("https://github.com/Rithishwork/slither-xlsx", "GitHub Repository")').setFormula('=HYPERLINK("https://github.com/Rithishwork/slither-xlsx", "GitHub Repository")');
   
-  // Power-Up Guide Legend on Sheet
   sheet.getRange("V10").setValue("POWER-UP GUIDE:").setFontWeight("bold");
   sheet.getRange("V11").setValue("🔵 Blue Pill: Speed Mod");
   sheet.getRange("V12").setValue("⚪ Ghost: Tail Pass");
@@ -196,11 +260,24 @@ function gameTick() {
 
     updateDashboard(score, highScore);
 
+    // Bulletproof Power-Up Spawn (Strictly inside box if box map)
     if (Math.random() < 0.20 && !activePowerup) {
       let pTypes = ["BLUE_PILL", "GHOST", "MAGNET", "SHIELD", "SHRINK", "DIAMOND"];
       let chosenP = pTypes[Math.floor(Math.random() * pTypes.length)];
-      let pRow = Math.floor(Math.random() * GRID_HEIGHT);
-      let pCol = Math.floor(Math.random() * GRID_WIDTH);
+      let pRow, pCol, pInvalid;
+      do {
+        pInvalid = false;
+        if (currentMapName === "BOX") {
+          pRow = Math.floor(Math.random() * 10) + 5;
+          pCol = Math.floor(Math.random() * 10) + 5;
+        } else {
+          pRow = Math.floor(Math.random() * GRID_HEIGHT);
+          pCol = Math.floor(Math.random() * GRID_WIDTH);
+        }
+        for (let ob of obstacles) if (ob[0] === pRow && ob[1] === pCol) pInvalid = true;
+        for (let s of snake) if (s[0] === pRow && s[1] === pCol) pInvalid = true;
+        if (apple[0] === pRow && apple[1] === pCol) pInvalid = true;
+      } while (pInvalid);
       props.setProperty("POWERUP", chosenP);
       props.setProperty("POWERUP_POS", JSON.stringify([pRow, pCol]));
     }
@@ -212,8 +289,13 @@ function gameTick() {
     let newRow, newCol, invalid;
     do {
       invalid = false;
-      newRow = Math.floor(Math.random() * GRID_HEIGHT);
-      newCol = Math.floor(Math.random() * GRID_WIDTH);
+      if (currentMapName === "BOX") {
+        newRow = Math.floor(Math.random() * 10) + 5;
+        newCol = Math.floor(Math.random() * 10) + 5;
+      } else {
+        newRow = Math.floor(Math.random() * GRID_HEIGHT);
+        newCol = Math.floor(Math.random() * GRID_WIDTH);
+      }
       for (let ob of obstacles) if (ob[0] === newRow && ob[1] === newCol) invalid = true;
       for (let s of snake) if (s[0] === newRow && s[1] === newCol) invalid = true;
     } while (invalid);
@@ -248,13 +330,15 @@ function startAutoGame() {
   }
 }
 
-function setMapClassic() { setMap("CLASSIC"); }
-function setMapBox()     { setMap("BOX"); }
-function setMapMaze()    { setMap("MAZE"); }
-
-function setMap(mapName) {
+function cycleMap() {
   const props = PropertiesService.getScriptProperties();
-  props.setProperty("MAP", mapName);
+  const currentMap = props.getProperty("MAP") || "CLASSIC";
+  
+  let currentIndex = MAP_ORDER.indexOf(currentMap);
+  currentIndex = (currentIndex === -1 || currentIndex >= MAP_ORDER.length - 1) ? 0 : currentIndex + 1;
+  
+  let nextMap = MAP_ORDER[currentIndex];
+  props.setProperty("MAP", nextMap);
   setupBoard();
 }
 
