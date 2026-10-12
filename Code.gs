@@ -1,6 +1,6 @@
 /**
- * SLITHER-XLSX COMPLETE ENGINE WITH DEATH ANIMATION & POWER-UPS
- * 10 Themes + 6 Universal Power-Ups + White Blink Death FX + Control Handlers
+ * SLITHER-XLSX COMPLETE ENGINE WITH INFO BANNER & REPO LINK
+ * 10 Themes + 6 Universal Power-Ups + White Blink Death FX + Sidebar Guide
  */
 
 const GRID_WIDTH = 20;  // Columns A to T
@@ -54,7 +54,7 @@ function setupBoard() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
 
   sheet.getRange("A21:Z30").clearContent();
-  sheet.getRange("U1:Z20").clearContent();
+  sheet.getRange("U1:Z25").clearContent();
 
   props.setProperty("SNAKE", JSON.stringify([[10, 10], [10, 9], [10, 8]]));
   props.setProperty("DIR", "RIGHT");
@@ -73,19 +73,34 @@ function setupBoard() {
   if (!props.getProperty("HIGH_SCORE")) props.setProperty("HIGH_SCORE", "0");
   if (!props.getProperty("THEME")) props.setProperty("THEME", "GAMEBOY");
 
+  // Arcade Title Header
   let headerRange = sheet.getRange("V1:W1");
   headerRange.merge();
-  headerRange.setValue("SLITHER HD");
+  headerRange.setValue("SLITHER.XLSX");
   headerRange.setBackground("#000000");
   headerRange.setFontColor("#00FF66");
   headerRange.setFontWeight("bold");
   headerRange.setHorizontalAlignment("center");
 
+  // Dashboard Metrics
   sheet.getRange("V2").setValue("SCORE:");
   sheet.getRange("V3").setValue("BEST:");
   sheet.getRange("V4").setValue("MAP:");
   sheet.getRange("V5").setValue("THEME:");
   sheet.getRange("V2:V5").setFontWeight("bold").setFontColor("#000000");
+
+  // GitHub Repo & Guide Banner Links
+  sheet.getRange("V7").setValue("REPO & README:").setFontWeight("bold");
+  sheet.getRange("V8").setValue('HYPERLINK("https://github.com/Rithishwork/slither-xlsx", "GitHub Repository")').setFormula('=HYPERLINK("https://github.com/Rithishwork/slither-xlsx", "GitHub Repository")');
+  
+  // Power-Up Guide Legend on Sheet
+  sheet.getRange("V10").setValue("POWER-UP GUIDE:").setFontWeight("bold");
+  sheet.getRange("V11").setValue("🔵 Blue Pill: Speed Mod");
+  sheet.getRange("V12").setValue("⚪ Ghost: Tail Pass");
+  sheet.getRange("V13").setValue("💜 Magnet: Pull Apples");
+  sheet.getRange("V14").setValue("🧡 Shield: Crash Absorb");
+  sheet.getRange("V15").setValue("💚 Shrink: -30% Length");
+  sheet.getRange("V16").setValue("💎 Diamond: 3x Points");
 
   applyTheme(props.getProperty("THEME"));
   updateDashboard(0, parseInt(props.getProperty("HIGH_SCORE")));
@@ -287,7 +302,6 @@ function applyTheme(themeKey) {
   ];
 
   sheet.setConditionalFormatRules(rules);
-  sheet.getRange("U1:U20").clearContent();
   PropertiesService.getScriptProperties().setProperty("THEME", themeKey);
   SpreadsheetApp.flush();
 }
